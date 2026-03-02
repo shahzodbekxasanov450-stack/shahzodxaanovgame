@@ -1,122 +1,175 @@
+💖, [02.03.2026 16:30]
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Shahzod Drift Arena</title>
+<title>Shahzod Drift Simulator</title>
 <style>
-body{
-  margin:0;
-  background:#111;
-  color:white;
-  text-align:center;
-  font-family:sans-serif;
+body {
+  margin: 0;
+  font-family: sans-serif;
+  text-align: center;
+  background: #111;
+  color: white;
 }
-canvas{
-  background:#2a2a2a;
-  display:none;
-  margin-top:10px;
+canvas {
+  display: none;
+  margin-top: 10px;
+  background: #444;
+  touch-action: none;
 }
-button{
-  padding:10px 20px;
-  margin:10px;
-  font-size:18px;
-  cursor:pointer;
+button {
+  padding: 10px 20px;
+  margin: 10px;
+  font-size: 18px;
+  cursor: pointer;
 }
-#ui{display:none;}
+#ui { display: none; margin-bottom: 10px; }
 </style>
 </head>
 <body>
 
-<h2>🔥 SHAHZOD DRIFT ARENA 🔥</h2>
-
+<h2>🔥 SHAHZOD DRIFT SIMULATOR 🔥</h2>
 <button id="startBtn">START</button>
 
 <div id="ui">
 Pul: <span id="money">0</span> 💰
 <button onclick="tune()">Tuning +Speed (100💰)</button>
+<select id="carSelect">
+<option value="Cobalt">Chevrolet Cobalt</option>
+<option value="Nexia">Chevrolet Nexia 3</option>
+<option value="Gentra">Chevrolet Gentra</option>
+<option value="Damas">Chevrolet Damas</option>
+</select>
 </div>
 
-<canvas id="game" width="400" height="600"></canvas>
+<canvas id="game" width="500" height="600"></canvas>
 
 <script>
-let canvas=document.getElementById("game");
-let ctx=canvas.getContext("2d");
+// Canvas va UI
+let canvas = document.getElementById("game");
+let ctx = canvas.getContext("2d");
+let ui = document.getElementById("ui");
+let money = 0;
+let running = false;
 
-let running=false;
-let money=0;
-
-let car={
-  x:200,
-  y:300,
-  angle:0,
-  speed:0,
-  maxSpeed:5
+// Player mashina
+let player = {
+  x: 250, y: 500, w: 40, h: 70, angle: 0,
+  speed: 0, maxSpeed: 5, accel: 0.2, friction: 0.05,
+  turnSpeed: 0.05, color: "red"
 };
 
-let keys={};
+// Bot mashinalar
+let bots = [];
 
-document.getElementById("startBtn").onclick=function(){
-  this.style.display="none";
-  document.getElementById("ui").style.display="block";
-  canvas.style.display="block";
-  running=true;
+// Klaviatura va touch
+let keys = {};
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+canvas.addEventListener("touchstart", e => {
+  if (e.touches[0].clientX < window.innerWidth/2) keys["ArrowLeft"]=true;
+  else keys["ArrowRight"]=true;
+});
+canvas.addEventListener("touchend", e => {keys["ArrowLeft"]=false; keys["ArrowRight"]=false;});
+
+// Tuning
+function tune() {
+  if(money>=100) { money-=100; player.maxSpeed+=1; }
+}
+
+// START tugmasi
+document.getElementById("startBtn").onclick = function() {
+  this.style.display = "none";
+  ui.style.display = "block";
+  canvas.style.display = "block";
+  running = true;
+  initGame();
   loop();
-};
+}
 
-document.addEventListener("keydown",e=>keys[e.key]=true);
-document.addEventListener("keyup",e=>keys[e.key]=false);
-
-function tune(){
-  if(money>=100){
-    money-=100;
-    car.maxSpeed+=1;
+// Init game
+function initGame(){
+  bots = [];
+  let colors = ["blue","green","yellow","purple","orange"];
+  for(let i=0;i<5;i++){
+    bots.push({
+      x:50+Math.random()*400,
+      y:Math.random()*300,
+      w:40, h:70,
+      angle: Math.random()*6.28,
+      speed:2+Math.random()*2,
+      color: colors[i]
+    });
   }
 }
 
+// Update
 function update(){
-  if(keys["ArrowUp"]) car.speed+=0.2;
-  if(keys["ArrowDown"]) car.speed-=0.2;
+  // Player boshqaruvi
+  if(keys["ArrowUp"]) player.speed+=player.accel;
+  if(keys["ArrowDown"]) player.speed-=player.accel;
+  if(keys["ArrowLeft"]) player.angle-=player.turnSpeed;
+  if(keys["ArrowRight"]) player.angle+=player.turnSpeed;
 
-  if(car.speed>car.maxSpeed) car.speed=car.maxSpeed;
-  if(car.speed<-car.maxSpeed) car.speed=-car.maxSpeed;
+  if(player.speed>player.maxSpeed) player.speed=player.maxSpeed;
+  if(player.speed<-player.maxSpeed/2) player.speed=-player.maxSpeed/2;
+  player.speed*=(1-player.friction);
 
-  if(keys["ArrowLeft"]) car.angle-=0.05;
-  if(keys["ArrowRight"]) car.angle+=0.05;
+  player.x += Math.cos(player.angle)*player.speed;
+  player.y += Math.sin(player.angle)*player.speed;
 
-  car.speed*=0.98;
+  // Chekkalar
+  if(player.x<0) player.x=0; if(player.x>canvas.width) player.x=canvas.width;
+  if(player.y<0) player.y=0; if(player.y>canvas.height) player.y=canvas.height;
 
-  car.x+=Math.cos(car.angle)*car.speed;
-  car.y+=Math.sin(car.angle)*car.speed;
+  // Bots harakati
+  bots.forEach(bot=>{
+    bot.x += Math.cos(bot.angle)*bot.speed;
+    bot.y += Math.sin(bot.angle)*bot.speed;
+    if(bot.x<0||bot.x>canvas.width) bot.angle=Math.PI-bot.angle;
+    if(bot.y<0||bot.y>canvas.height) bot.angle=-bot.angle;
 
-  if(car.x<0) car.x=0;
-  if(car.x>400) car.x=400;
-  if(car.y<0) car.y=0;
-  if(car.y>600) car.y=600;
+    // Collision
+    let dx=player.x-bot.x, dy=player.y-bot.y;
+    if(Math.sqrt(dx*dx+dy*dy)<40){player.speed*=-0.5; money+=5;}
+  });
 
   money+=0.05;
   document.getElementById("money").innerText=Math.floor(money);
 }
 
-function draw(){
-  ctx.clearRect(0,0,400,600);
-  ctx.fillStyle="#3a3a3a";
-  ctx.fillRect(0,0,400,600);
-
+// Draw
+function drawCar(x,y,angle,color){
   ctx.save();
-  ctx.translate(car.x,car.y);
-  ctx.rotate(car.angle);
-  ctx.fillStyle="red";
-  ctx.fillRect(-15,-25,30,50);
+  ctx.translate(x,y);
+  ctx.rotate(angle);
+  ctx.fillStyle=color;
+  ctx.fillRect(-20,-35,40,70);
   ctx.restore();
 }
 
+function drawArena(){
+  ctx.fillStyle="#2a2a2a";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // Yo‘l chiziqlari
+  ctx.strokeStyle="white"; ctx.setLineDash([15,15]);
+  ctx.beginPath(); ctx.moveTo(250,0); ctx.lineTo(250,canvas.height); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+💖, [02.03.2026 16:30]
+// Loop
 function loop(){
   if(!running) return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawArena();
   update();
-  draw();
+  drawCar(player.x,player.y,player.angle,player.color);
+  bots.forEach(bot=>drawCar(bot.x,bot.y,bot.angle,bot.color));
   requestAnimationFrame(loop);
 }
 </script>
-
 </body>
 </html>
