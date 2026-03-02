@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Shahzod Drift Arena</title>
+<style>
+body{
+  margin:0;
+  background:#111;
+  color:white;
+  text-align:center;
+  font-family:sans-serif;
+}
+canvas{
+  background:#2a2a2a;
+  display:none;
+  margin-top:10px;
+}
+button{
+  padding:10px 20px;
+  margin:10px;
+  font-size:18px;
+  cursor:pointer;
+}
+#ui{display:none;}
+</style>
+</head>
+<body>
+
+<h2>🔥 SHAHZOD DRIFT ARENA 🔥</h2>
+
+<button id="startBtn">START</button>
+
+<div id="ui">
+Pul: <span id="money">0</span> 💰
+<button onclick="tune()">Tuning +Speed (100💰)</button>
+</div>
+
+<canvas id="game" width="400" height="600"></canvas>
+
+<script>
+let canvas=document.getElementById("game");
+let ctx=canvas.getContext("2d");
+
+let running=false;
+let money=0;
+
+let car={
+  x:200,
+  y:300,
+  angle:0,
+  speed:0,
+  maxSpeed:5
+};
+
+let keys={};
+
+document.getElementById("startBtn").onclick=function(){
+  this.style.display="none";
+  document.getElementById("ui").style.display="block";
+  canvas.style.display="block";
+  running=true;
+  loop();
+};
+
+document.addEventListener("keydown",e=>keys[e.key]=true);
+document.addEventListener("keyup",e=>keys[e.key]=false);
+
+function tune(){
+  if(money>=100){
+    money-=100;
+    car.maxSpeed+=1;
+  }
+}
+
+function update(){
+  if(keys["ArrowUp"]) car.speed+=0.2;
+  if(keys["ArrowDown"]) car.speed-=0.2;
+
+  if(car.speed>car.maxSpeed) car.speed=car.maxSpeed;
+  if(car.speed<-car.maxSpeed) car.speed=-car.maxSpeed;
+
+  if(keys["ArrowLeft"]) car.angle-=0.05;
+  if(keys["ArrowRight"]) car.angle+=0.05;
+
+  car.speed*=0.98;
+
+  car.x+=Math.cos(car.angle)*car.speed;
+  car.y+=Math.sin(car.angle)*car.speed;
+
+  if(car.x<0) car.x=0;
+  if(car.x>400) car.x=400;
+  if(car.y<0) car.y=0;
+  if(car.y>600) car.y=600;
+
+  money+=0.05;
+  document.getElementById("money").innerText=Math.floor(money);
+}
+
+function draw(){
+  ctx.clearRect(0,0,400,600);
+  ctx.fillStyle="#3a3a3a";
+  ctx.fillRect(0,0,400,600);
+
+  ctx.save();
+  ctx.translate(car.x,car.y);
+  ctx.rotate(car.angle);
+  ctx.fillStyle="red";
+  ctx.fillRect(-15,-25,30,50);
+  ctx.restore();
+}
+
+function loop(){
+  if(!running) return;
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+</script>
+
+</body>
+</html>
